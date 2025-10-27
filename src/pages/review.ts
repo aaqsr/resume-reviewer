@@ -5,8 +5,8 @@ import * as pdfjsLib from 'pdfjs-dist'
 
 // Configure PDF.js worker - use the bundled worker from node_modules
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
 ).toString()
 
 // DOM Elements
@@ -117,21 +117,32 @@ async function renderPage(pageNum: number) {
     if (!pdfDocument) return
 
     const page = await pdfDocument.getPage(pageNum)
-    const viewport = page.getViewport({ scale: currentZoom * 1.5 })
+
+    // Get the base viewport at the desired display size
+    const baseViewport = page.getViewport({ scale: currentZoom * 1.5 })
+
+    // Render at 2x resolution for high DPI, then scale down with CSS
+    const scale = 2
+    const renderViewport = page.getViewport({ scale: currentZoom * 1.5 * scale })
 
     const canvas = pdfCanvasEl
     const context = canvas.getContext('2d')!
 
-    canvas.width = viewport.width
-    canvas.height = viewport.height
+    // Set canvas dimensions at high resolution
+    canvas.width = renderViewport.width
+    canvas.height = renderViewport.height
 
-    // Update pin layer size and position
-    pinLayerEl.style.width = `${viewport.width}px`
-    pinLayerEl.style.height = `${viewport.height}px`
+    // Scale down display size with CSS for crisp rendering
+    canvas.style.width = `${baseViewport.width}px`
+    canvas.style.height = `${baseViewport.height}px`
+
+    // Update pin layer size and position to match display size
+    pinLayerEl.style.width = `${baseViewport.width}px`
+    pinLayerEl.style.height = `${baseViewport.height}px`
 
     const renderContext = {
         canvasContext: context,
-        viewport: viewport
+        viewport: renderViewport
     }
 
     await page.render(renderContext).promise
@@ -274,18 +285,48 @@ zoomOutBtn.addEventListener('click', () => {
     }
 })
 
-// Add comment button
+// Add comment button - just enable placing mode, no modal
 addCommentBtn.addEventListener('click', () => {
-    openCommentModal()
+    if (isPlacingPin) {
+        // Cancel placing mode
+        isPlacingPin = false
+        pdfContainerEl.classList.remove('placing-pin')
+        addCommentBtn.textContent = '💬 Add Comment'
+        addCommentBtn.classList.remove('btn-danger')
+        addCommentBtn.classList.add('btn-primary')
+    } else {
+        // Enable placing mode
+        isPlacingPin = true
+        pdfContainerEl.classList.add('placing-pin')
+        addCommentBtn.textContent = '❌ Cancel'
+        addCommentBtn.classList.remove('btn-primary')
+        addCommentBtn.classList.add('btn-danger')
+    }
 })
 
 // Modal controls
-function openCommentModal() {
+function openCommentModal(x: number, y: number) {
+    tempPinPosition = { x, y, page: currentPage }
+
+    // Show temporary pin
+    const tempPin = document.createElement('div')
+    tempPin.className = 'pin placing'
+    tempPin.style.left = `${x}px`
+    tempPin.style.top = `${y}px`
+    tempPin.setAttribute('data-number', '📍')
+    pinLayerEl.appendChild(tempPin)
+
+    // Show modal with form
     commentModalEl.classList.remove('hidden')
-    commentFormEl.classList.add('hidden')
-    isPlacingPin = true
-    pdfContainerEl.classList.add('placing-pin')
-    tempPinPosition = null
+    commentFormEl.classList.remove('hidden')
+    commentTextArea.focus()
+
+    // Disable placing mode
+    isPlacingPin = false
+    pdfContainerEl.classList.remove('placing-pin')
+    addCommentBtn.textContent = '💬 Add Comment'
+    addCommentBtn.classList.remove('btn-danger')
+    addCommentBtn.classList.add('btn-primary')
 }
 
 function closeCommentModal() {
@@ -319,23 +360,8 @@ pdfCanvasEl.addEventListener('click', (e) => {
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
-    tempPinPosition = { x, y, page: currentPage }
-
-    // Show temporary pin
-    const tempPin = document.createElement('div')
-    tempPin.className = 'pin placing'
-    tempPin.style.left = `${x}px`
-    tempPin.style.top = `${y}px`
-    tempPin.setAttribute('data-number', '📍')
-    pinLayerEl.appendChild(tempPin)
-
-    // Show comment form
-    commentFormEl.classList.remove('hidden')
-    commentTextArea.focus()
-
-    // Stop placing pin mode but keep modal open
-    isPlacingPin = false
-    pdfContainerEl.classList.remove('placing-pin')
+    // Open modal with the pin position
+    openCommentModal(x, y)
 })
 
 // Character count
