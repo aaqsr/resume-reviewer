@@ -14,7 +14,6 @@ const loadingEl = document.getElementById('loading') as HTMLDivElement
 const errorEl = document.getElementById('error') as HTMLDivElement
 const reviewContentEl = document.getElementById('review-content') as HTMLDivElement
 const togglePinsBtn = document.getElementById('toggle-pins-btn') as HTMLButtonElement
-const addCommentBtn = document.getElementById('add-comment-btn') as HTMLButtonElement
 const commentsListEl = document.getElementById('comments-list') as HTMLDivElement
 const commentCountEl = document.getElementById('comment-count') as HTMLSpanElement
 const prevPageBtn = document.getElementById('prev-page') as HTMLButtonElement
@@ -42,7 +41,6 @@ let currentPage = 1
 let totalPages = 1
 let currentZoom = 1.0
 let comments: Comment[] = []
-let isPlacingPin = false
 let tempPinPosition: { x: number; y: number; page: number } | null = null
 let activeCommentId: string | null = null
 let pinsVisible = true
@@ -82,11 +80,12 @@ async function initialize() {
         // Load PDF document
         await loadPDF()
 
-        // Show content
+        // Show content and enable always-on placing mode
         loadingEl.classList.add('hidden')
         reviewContentEl.classList.remove('hidden')
-        addCommentBtn.disabled = false
         togglePinsBtn.disabled = false
+        pdfContainerEl.classList.add('placing-pin')
+        pinLayerEl.classList.add('placing-mode')
 
     } catch (error) {
         console.error('Initialization error:', error)
@@ -314,27 +313,6 @@ togglePinsBtn.addEventListener('click', () => {
     }
 })
 
-// Add comment button - just enable placing mode, no modal
-addCommentBtn.addEventListener('click', () => {
-    if (isPlacingPin) {
-        // Cancel placing mode
-        isPlacingPin = false
-        pdfContainerEl.classList.remove('placing-pin')
-        pinLayerEl.classList.remove('placing-mode')
-        addCommentBtn.textContent = '💬 Add Comment'
-        addCommentBtn.classList.remove('btn-danger')
-        addCommentBtn.classList.add('btn-primary')
-    } else {
-        // Enable placing mode
-        isPlacingPin = true
-        pdfContainerEl.classList.add('placing-pin')
-        pinLayerEl.classList.add('placing-mode')
-        addCommentBtn.textContent = '❌ Cancel'
-        addCommentBtn.classList.remove('btn-primary')
-        addCommentBtn.classList.add('btn-danger')
-    }
-})
-
 // Modal controls
 function openCommentModal(x: number, y: number) {
     tempPinPosition = { x, y, page: currentPage }
@@ -355,21 +333,10 @@ function openCommentModal(x: number, y: number) {
     setTimeout(() => {
         commentTextArea.focus()
     }, 100)
-
-    // Disable placing mode
-    isPlacingPin = false
-    pdfContainerEl.classList.remove('placing-pin')
-    pinLayerEl.classList.remove('placing-mode')
-    addCommentBtn.textContent = '💬 Add Comment'
-    addCommentBtn.classList.remove('btn-danger')
-    addCommentBtn.classList.add('btn-primary')
 }
 
 function closeCommentModal() {
     commentModalEl.classList.add('hidden')
-    isPlacingPin = false
-    pdfContainerEl.classList.remove('placing-pin')
-    pinLayerEl.classList.remove('placing-mode')
     tempPinPosition = null
     authorNameInput.value = ''
     commentTextArea.value = ''
@@ -378,11 +345,6 @@ function closeCommentModal() {
     // Remove temporary pin if exists
     const tempPin = document.querySelector('.pin.placing')
     if (tempPin) tempPin.remove()
-
-    // Reset button
-    addCommentBtn.textContent = '💬 Add Comment'
-    addCommentBtn.classList.remove('btn-danger')
-    addCommentBtn.classList.add('btn-primary')
 }
 
 modalCloseBtn.addEventListener('click', closeCommentModal)
@@ -396,12 +358,11 @@ commentModalEl.addEventListener('click', (e) => {
 
 // Place pin on PDF click
 pdfCanvasEl.addEventListener('click', (e) => {
-    if (!isPlacingPin) return
-
     const rect = pdfCanvasEl.getBoundingClientRect()
     const scaleX = baseViewportWidth / rect.width
     const scaleY = baseViewportHeight / rect.height
 
+    // Get click position relative to canvas, accounting for scaling
     const x = (e.clientX - rect.left) * scaleX
     const y = (e.clientY - rect.top) * scaleY
 
