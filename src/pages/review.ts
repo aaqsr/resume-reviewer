@@ -13,6 +13,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 const loadingEl = document.getElementById('loading') as HTMLDivElement
 const errorEl = document.getElementById('error') as HTMLDivElement
 const reviewContentEl = document.getElementById('review-content') as HTMLDivElement
+const togglePinsBtn = document.getElementById('toggle-pins-btn') as HTMLButtonElement
 const addCommentBtn = document.getElementById('add-comment-btn') as HTMLButtonElement
 const commentsListEl = document.getElementById('comments-list') as HTMLDivElement
 const commentCountEl = document.getElementById('comment-count') as HTMLSpanElement
@@ -44,6 +45,9 @@ let comments: Comment[] = []
 let isPlacingPin = false
 let tempPinPosition: { x: number; y: number; page: number } | null = null
 let activeCommentId: string | null = null
+let pinsVisible = true
+let baseViewportWidth = 0
+let baseViewportHeight = 0
 
 // Show/hide elements
 function showError(message: string) {
@@ -78,19 +82,11 @@ async function initialize() {
         // Load PDF document
         await loadPDF()
 
-        // Load comments
-        await loadComments()
-
-        // Subscribe to real-time comments
-        commentsService.subscribeToComments(currentPDF.id, (updatedComments) => {
-            comments = updatedComments
-            renderComments()
-        })
-
         // Show content
         loadingEl.classList.add('hidden')
         reviewContentEl.classList.remove('hidden')
         addCommentBtn.disabled = false
+        togglePinsBtn.disabled = false
 
     } catch (error) {
         console.error('Initialization error:', error)
@@ -110,6 +106,9 @@ async function loadPDF() {
 
     await renderPage(currentPage)
     updatePageInfo()
+
+    // Load comments after PDF is rendered
+    await loadComments()
 }
 
 // Render PDF page
@@ -120,6 +119,10 @@ async function renderPage(pageNum: number) {
 
     // Get the base viewport at the desired display size
     const baseViewport = page.getViewport({ scale: currentZoom * 1.5 })
+
+    // Store base dimensions for pin positioning
+    baseViewportWidth = baseViewport.width
+    baseViewportHeight = baseViewport.height
 
     // Render at 2x resolution for high DPI, then scale down with CSS
     const scale = 2
@@ -163,6 +166,14 @@ async function loadComments() {
     if (!currentPDF) return
     comments = await commentsService.getCommentsByPDFId(currentPDF.id)
     renderComments()
+    renderPins() // Render pins on initial load
+
+    // Subscribe to real-time comments after initial load
+    commentsService.subscribeToComments(currentPDF.id, (updatedComments) => {
+        comments = updatedComments
+        renderComments()
+        renderPins()
+    })
 }
 
 // Render comments in sidebar
@@ -206,6 +217,11 @@ function escapeHtml(text: string): string {
 
 // Render pins on PDF
 function renderPins() {
+    if (!pinsVisible) {
+        pinLayerEl.innerHTML = ''
+        return
+    }
+
     const pageComments = comments.filter(c => c.page === currentPage)
 
     pinLayerEl.innerHTML = pageComments
@@ -224,7 +240,8 @@ function renderPins() {
 
     // Add click handlers to pins
     document.querySelectorAll('.pin').forEach(el => {
-        el.addEventListener('click', () => {
+        el.addEventListener('click', (e) => {
+            e.stopPropagation() // Prevent triggering canvas click
             const commentId = el.getAttribute('data-comment-id')!
             highlightComment(commentId)
         })
@@ -285,12 +302,25 @@ zoomOutBtn.addEventListener('click', () => {
     }
 })
 
+// Toggle pins visibility
+togglePinsBtn.addEventListener('click', () => {
+    pinsVisible = !pinsVisible
+    if (pinsVisible) {
+        togglePinsBtn.textContent = '👁️ Hide Pins'
+        renderPins()
+    } else {
+        togglePinsBtn.textContent = '👁️‍🗨️ Show Pins'
+        renderPins()
+    }
+})
+
 // Add comment button - just enable placing mode, no modal
 addCommentBtn.addEventListener('click', () => {
     if (isPlacingPin) {
         // Cancel placing mode
         isPlacingPin = false
         pdfContainerEl.classList.remove('placing-pin')
+        pinLayerEl.classList.remove('placing-mode')
         addCommentBtn.textContent = '💬 Add Comment'
         addCommentBtn.classList.remove('btn-danger')
         addCommentBtn.classList.add('btn-primary')
@@ -298,6 +328,7 @@ addCommentBtn.addEventListener('click', () => {
         // Enable placing mode
         isPlacingPin = true
         pdfContainerEl.classList.add('placing-pin')
+        pinLayerEl.classList.add('placing-mode')
         addCommentBtn.textContent = '❌ Cancel'
         addCommentBtn.classList.remove('btn-primary')
         addCommentBtn.classList.add('btn-danger')
@@ -319,11 +350,16 @@ function openCommentModal(x: number, y: number) {
     // Show modal with form
     commentModalEl.classList.remove('hidden')
     commentFormEl.classList.remove('hidden')
-    commentTextArea.focus()
+
+    // Focus on textarea after a short delay to ensure modal is visible
+    setTimeout(() => {
+        commentTextArea.focus()
+    }, 100)
 
     // Disable placing mode
     isPlacingPin = false
     pdfContainerEl.classList.remove('placing-pin')
+    pinLayerEl.classList.remove('placing-mode')
     addCommentBtn.textContent = '💬 Add Comment'
     addCommentBtn.classList.remove('btn-danger')
     addCommentBtn.classList.add('btn-primary')
@@ -333,6 +369,7 @@ function closeCommentModal() {
     commentModalEl.classList.add('hidden')
     isPlacingPin = false
     pdfContainerEl.classList.remove('placing-pin')
+    pinLayerEl.classList.remove('placing-mode')
     tempPinPosition = null
     authorNameInput.value = ''
     commentTextArea.value = ''
@@ -341,6 +378,11 @@ function closeCommentModal() {
     // Remove temporary pin if exists
     const tempPin = document.querySelector('.pin.placing')
     if (tempPin) tempPin.remove()
+
+    // Reset button
+    addCommentBtn.textContent = '💬 Add Comment'
+    addCommentBtn.classList.remove('btn-danger')
+    addCommentBtn.classList.add('btn-primary')
 }
 
 modalCloseBtn.addEventListener('click', closeCommentModal)
@@ -357,8 +399,11 @@ pdfCanvasEl.addEventListener('click', (e) => {
     if (!isPlacingPin) return
 
     const rect = pdfCanvasEl.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const scaleX = baseViewportWidth / rect.width
+    const scaleY = baseViewportHeight / rect.height
+
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
 
     // Open modal with the pin position
     openCommentModal(x, y)

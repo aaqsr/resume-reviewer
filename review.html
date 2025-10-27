@@ -14,6 +14,9 @@
             <div class="header-content">
                 <h1>📄 Resume Review</h1>
                 <div class="header-actions">
+                    <button id="toggle-pins-btn" class="btn-secondary">
+                        👁️ Hide Pins
+                    </button>
                     <button id="add-comment-btn" class="btn-primary" disabled>
                         💬 Add Comment
                     </button>
@@ -78,8 +81,7 @@
                 <button id="modal-close" class="modal-close">×</button>
             </div>
             <div class="modal-body">
-                <p class="modal-instruction">Click on the resume to place your comment pin</p>
-                <div id="comment-form" class="comment-form hidden">
+                <div id="comment-form" class="comment-form">
                     <input type="text" id="author-name" placeholder="Your name (optional)" maxlength="50">
                     <textarea id="comment-text" placeholder="Write your feedback..." rows="4" maxlength="500"
                         required></textarea>
