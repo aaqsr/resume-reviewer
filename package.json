@@ -1,0 +1,26 @@
+{
+    "name": "resume-reviewer",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "type-check": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@types/node": "^24.9.1",
+        "@types/pdfjs-dist": "^2.10.378",
+        "dotenv": "^17.2.3",
+        "vite": "^7.1.12"
+    },
+    "peerDependencies": {
+        "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "@supabase/supabase-js": "^2.76.1",
+        "pdfjs-dist": "^5.4.296"
+    }
+}

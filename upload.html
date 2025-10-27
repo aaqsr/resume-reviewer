@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Resume - Resume Review</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header-bar">
+            <h1>📄 Resume Review</h1>
+            <div class="user-section">
+                <div id="user-info" class="user-info hidden">
+                    <img id="user-avatar" class="avatar" src="" alt="">
+                    <span id="user-name"></span>
+                </div>
+                <button id="logout-btn" class="btn-secondary hidden">Sign Out</button>
+            </div>
+        </header>
+
+        <main>
+            <div id="auth-loading" class="loading">
+                <div class="spinner"></div>
+                <p>Checking authentication...</p>
+            </div>
+
+            <div id="upload-section" class="upload-section hidden">
+                <h2>Upload Your Resume</h2>
+                <p class="subtitle">Upload a PDF to get feedback from your peers</p>
+
+                <div class="upload-area" id="upload-area">
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <div class="upload-prompt">
+                        <span class="upload-icon">📄</span>
+                        <p><strong>Click to upload</strong> or drag and drop</p>
+                        <p class="upload-hint">PDF only • Max 5MB</p>
+                    </div>
+                </div>
+
+                <div id="file-info" class="file-info hidden">
+                    <div class="file-details">
+                        <span class="file-icon">📄</span>
+                        <div>
+                            <p class="file-name" id="file-name"></p>
+                            <p class="file-size" id="file-size"></p>
+                        </div>
+                    </div>
+                    <button id="upload-btn" class="btn-primary">Upload Resume</button>
+                </div>
+
+                <div id="upload-progress" class="upload-progress hidden">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p id="progress-text">Uploading...</p>
+                </div>
+
+                <div id="success-section" class="success-section hidden">
+                    <div class="success-icon">✅</div>
+                    <h3>Resume Uploaded!</h3>
+                    <p>Share this link with reviewers:</p>
+                    <div class="share-link">
+                        <input type="text" id="share-link" readonly>
+                        <button id="copy-btn" class="btn-secondary">Copy</button>
+                    </div>
+                    <button id="upload-another" class="btn-primary">Upload Another</button>
+                </div>
+            </div>
+
+            <div id="error" class="error hidden"></div>
+        </main>
+    </div>
+
+    <script type="module" src="/src/pages/upload.ts"></script>
+</body>
+
+</html>
