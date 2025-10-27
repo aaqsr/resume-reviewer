@@ -10,6 +10,7 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, 'index.html'),
                 upload: resolve(__dirname, 'upload.html'),
+                review: resolve(__dirname, 'review.html'),
             }
         }
     },
@@ -26,6 +27,7 @@ export default defineConfig({
         exclude: []
     },
     optimizeDeps: {
+        include: ['pdfjs-dist'],
         esbuildOptions: {
             target: 'esnext',
             loader: {

@@ -1,4 +1,5 @@
 import { authService } from '../lib/auth'
+import { pdfService } from '../lib/pdf'
 
 // DOM Elements
 const authLoadingEl = document.getElementById('auth-loading') as HTMLDivElement
@@ -13,6 +14,13 @@ const fileInfoEl = document.getElementById('file-info') as HTMLDivElement
 const fileNameEl = document.getElementById('file-name') as HTMLParagraphElement
 const fileSizeEl = document.getElementById('file-size') as HTMLParagraphElement
 const uploadBtn = document.getElementById('upload-btn') as HTMLButtonElement
+const uploadProgressEl = document.getElementById('upload-progress') as HTMLDivElement
+const progressFillEl = document.getElementById('progress-fill') as HTMLDivElement
+const progressTextEl = document.getElementById('progress-text') as HTMLParagraphElement
+const successSectionEl = document.getElementById('success-section') as HTMLDivElement
+const shareLinkEl = document.getElementById('share-link') as HTMLInputElement
+const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement
+const uploadAnotherBtn = document.getElementById('upload-another') as HTMLButtonElement
 const errorEl = document.getElementById('error') as HTMLDivElement
 
 let selectedFile: File | null = null
@@ -31,6 +39,16 @@ function formatFileSize(bytes: number): string {
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+function resetUploadForm() {
+    selectedFile = null
+    fileInput.value = ''
+    fileInfoEl.classList.add('hidden')
+    uploadProgressEl.classList.add('hidden')
+    successSectionEl.classList.add('hidden')
+    uploadArea.classList.remove('hidden')
+    showError(null)
 }
 
 // Handle file selection
@@ -80,29 +98,69 @@ uploadArea.addEventListener('drop', (e) => {
     if (file) handleFileSelect(file)
 })
 
-// Handle upload (stub for now)
+// Handle upload
 uploadBtn.addEventListener('click', async () => {
     if (!selectedFile) return
+
+    const user = authService.getCurrentUser()
+    if (!user) {
+        showError('You must be logged in to upload')
+        return
+    }
 
     try {
         showError(null)
         uploadBtn.disabled = true
-        uploadBtn.textContent = 'Uploading...'
 
-        // TODO: Implement actual upload to Supabase
-        console.log('Would upload:', selectedFile.name)
+        // Hide file info and show progress
+        fileInfoEl.classList.add('hidden')
+        uploadProgressEl.classList.remove('hidden')
 
-        // For now, just show success after a delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Upload the file
+        const pdf = await pdfService.uploadPDF(
+            selectedFile,
+            user.id,
+            (progress) => {
+                const percentage = Math.round(progress.percentage)
+                progressFillEl.style.width = `${percentage}%`
+                progressTextEl.textContent = `Uploading... ${percentage}%`
+            }
+        )
 
-        alert('Upload functionality will be implemented in the next step!')
+        // Show success with shareable link
+        const shareLink = pdfService.getShareableLink(pdf.share_token)
+        shareLinkEl.value = shareLink
+
+        uploadProgressEl.classList.add('hidden')
+        successSectionEl.classList.remove('hidden')
 
     } catch (error) {
-        showError(error instanceof Error ? error.message : 'Failed to upload')
+        console.error('Upload error:', error)
+        showError(error instanceof Error ? error.message : 'Failed to upload resume')
+        uploadProgressEl.classList.add('hidden')
+        fileInfoEl.classList.remove('hidden')
     } finally {
         uploadBtn.disabled = false
-        uploadBtn.textContent = 'Upload Resume'
     }
+})
+
+// Copy share link
+copyBtn.addEventListener('click', async () => {
+    try {
+        await navigator.clipboard.writeText(shareLinkEl.value)
+        const originalText = copyBtn.textContent
+        copyBtn.textContent = 'Copied!'
+        setTimeout(() => {
+            copyBtn.textContent = originalText
+        }, 2000)
+    } catch (error) {
+        showError('Failed to copy link')
+    }
+})
+
+// Upload another
+uploadAnotherBtn.addEventListener('click', () => {
+    resetUploadForm()
 })
 
 // Handle logout

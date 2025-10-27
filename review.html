@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Resume - Resume Review</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="review-container">
+        <header class="review-header">
+            <div class="header-content">
+                <h1>📄 Resume Review</h1>
+                <div class="header-actions">
+                    <button id="add-comment-btn" class="btn-primary" disabled>
+                        💬 Add Comment
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="review-main">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading resume...</p>
+            </div>
+
+            <div id="error" class="error hidden"></div>
+
+            <div id="review-content" class="review-content hidden">
+                <div class="pdf-sidebar">
+                    <div class="sidebar-section">
+                        <h3>Comments (<span id="comment-count">0</span>)</h3>
+                        <div id="comments-list" class="comments-list">
+                            <p class="no-comments">No comments yet. Be the first to leave feedback!</p>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Instructions</h3>
+                        <ol class="instructions">
+                            <li>Click "Add Comment" button</li>
+                            <li>Click anywhere on the PDF to place a pin</li>
+                            <li>Write your feedback</li>
+                            <li>Submit to share with the resume owner</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="pdf-viewer-container">
+                    <div class="pdf-controls">
+                        <button id="prev-page" class="btn-icon" disabled>←</button>
+                        <span id="page-info">Page 1 of 1</span>
+                        <button id="next-page" class="btn-icon" disabled>→</button>
+                        <div class="zoom-controls">
+                            <button id="zoom-out" class="btn-icon">-</button>
+                            <span id="zoom-level">100%</span>
+                            <button id="zoom-in" class="btn-icon">+</button>
+                        </div>
+                    </div>
+
+                    <div id="pdf-container" class="pdf-container">
+                        <canvas id="pdf-canvas"></canvas>
+                        <div id="pin-layer" class="pin-layer"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Comment Modal -->
+    <div id="comment-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Comment</h2>
+                <button id="modal-close" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-instruction">Click on the resume to place your comment pin</p>
+                <div id="comment-form" class="comment-form hidden">
+                    <input type="text" id="author-name" placeholder="Your name (optional)" maxlength="50">
+                    <textarea id="comment-text" placeholder="Write your feedback..." rows="4" maxlength="500"
+                        required></textarea>
+                    <div class="char-count"><span id="char-count">0</span>/500</div>
+                    <div class="modal-actions">
+                        <button id="cancel-comment" class="btn-secondary">Cancel</button>
+                        <button id="submit-comment" class="btn-primary">Submit Comment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/pages/review.ts"></script>
+</body>
+
+</html>
