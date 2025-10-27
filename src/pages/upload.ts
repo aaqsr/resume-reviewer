@@ -1,5 +1,6 @@
 import { authService } from '../lib/auth'
 import { pdfService } from '../lib/pdf'
+import type { PDF } from '../types'
 
 // DOM Elements
 const authLoadingEl = document.getElementById('auth-loading') as HTMLDivElement
@@ -22,8 +23,16 @@ const shareLinkEl = document.getElementById('share-link') as HTMLInputElement
 const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement
 const uploadAnotherBtn = document.getElementById('upload-another') as HTMLButtonElement
 const errorEl = document.getElementById('error') as HTMLDivElement
+const existingResumeEl = document.getElementById('existing-resume') as HTMLDivElement
+const existingFilenameEl = document.getElementById('existing-filename') as HTMLParagraphElement
+const existingShareLinkEl = document.getElementById('existing-share-link') as HTMLInputElement
+const existingCopyBtn = document.getElementById('existing-copy-btn') as HTMLButtonElement
+const viewResumeBtn = document.getElementById('view-resume-btn') as HTMLButtonElement
+const deleteResumeBtn = document.getElementById('delete-resume-btn') as HTMLButtonElement
+const replaceResumeBtn = document.getElementById('replace-resume-btn') as HTMLButtonElement
 
 let selectedFile: File | null = null
+let existingPDF: PDF | null = null
 
 // Show/hide elements
 function showError(message: string | null) {
@@ -49,6 +58,22 @@ function resetUploadForm() {
     successSectionEl.classList.add('hidden')
     uploadArea.classList.remove('hidden')
     showError(null)
+}
+
+function showExistingResume(pdf: PDF) {
+    existingPDF = pdf
+    existingFilenameEl.textContent = pdf.filename
+    const shareLink = pdfService.getShareableLink(pdf.share_token)
+    existingShareLinkEl.value = shareLink
+
+    existingResumeEl.classList.remove('hidden')
+    uploadArea.classList.add('hidden')
+    fileInfoEl.classList.add('hidden')
+}
+
+function hideExistingResume() {
+    existingResumeEl.classList.add('hidden')
+    uploadArea.classList.remove('hidden')
 }
 
 // Handle file selection
@@ -99,7 +124,7 @@ uploadArea.addEventListener('drop', (e) => {
 })
 
 // Handle upload
-uploadBtn.addEventListener('click', async () => {
+async function performUpload() {
     if (!selectedFile) return
 
     const user = authService.getCurrentUser()
@@ -111,6 +136,11 @@ uploadBtn.addEventListener('click', async () => {
     try {
         showError(null)
         uploadBtn.disabled = true
+
+        // If replacing, delete the old one first
+        if (existingPDF) {
+            await pdfService.deletePDF(existingPDF.id, existingPDF.file_path)
+        }
 
         // Hide file info and show progress
         fileInfoEl.classList.add('hidden')
@@ -134,6 +164,8 @@ uploadBtn.addEventListener('click', async () => {
         uploadProgressEl.classList.add('hidden')
         successSectionEl.classList.remove('hidden')
 
+        existingPDF = pdf
+
     } catch (error) {
         console.error('Upload error:', error)
         showError(error instanceof Error ? error.message : 'Failed to upload resume')
@@ -142,9 +174,11 @@ uploadBtn.addEventListener('click', async () => {
     } finally {
         uploadBtn.disabled = false
     }
-})
+}
 
-// Copy share link
+uploadBtn.addEventListener('click', performUpload)
+
+// Copy share link (success section)
 copyBtn.addEventListener('click', async () => {
     try {
         await navigator.clipboard.writeText(shareLinkEl.value)
@@ -158,9 +192,67 @@ copyBtn.addEventListener('click', async () => {
     }
 })
 
+// Copy share link (existing resume)
+existingCopyBtn.addEventListener('click', async () => {
+    try {
+        await navigator.clipboard.writeText(existingShareLinkEl.value)
+        const originalText = existingCopyBtn.textContent
+        existingCopyBtn.textContent = 'Copied!'
+        setTimeout(() => {
+            existingCopyBtn.textContent = originalText
+        }, 2000)
+    } catch (error) {
+        showError('Failed to copy link')
+    }
+})
+
+// View resume button
+viewResumeBtn.addEventListener('click', () => {
+    if (existingPDF) {
+        const shareLink = pdfService.getShareableLink(existingPDF.share_token)
+        window.open(shareLink, '_blank')
+    }
+})
+
+// Delete resume button
+deleteResumeBtn.addEventListener('click', async () => {
+    if (!existingPDF) return
+
+    if (!confirm('Are you sure you want to delete this resume? This will also delete all comments.')) {
+        return
+    }
+
+    try {
+        deleteResumeBtn.disabled = true
+        deleteResumeBtn.textContent = 'Deleting...'
+
+        await pdfService.deletePDF(existingPDF.id, existingPDF.file_path)
+
+        existingPDF = null
+        hideExistingResume()
+        resetUploadForm()
+
+    } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to delete resume')
+    } finally {
+        deleteResumeBtn.disabled = false
+        deleteResumeBtn.textContent = 'Delete'
+    }
+})
+
+// Replace resume button
+replaceResumeBtn.addEventListener('click', () => {
+    hideExistingResume()
+    resetUploadForm()
+})
+
 // Upload another
 uploadAnotherBtn.addEventListener('click', () => {
-    resetUploadForm()
+    if (existingPDF) {
+        showExistingResume(existingPDF)
+    } else {
+        resetUploadForm()
+    }
 })
 
 // Handle logout
@@ -173,8 +265,23 @@ logoutBtn.addEventListener('click', async () => {
     }
 })
 
+// Check for existing resume
+async function checkExistingResume(userId: string) {
+    try {
+        const pdfs = await pdfService.getUserPDFs(userId)
+        if (pdfs.length > 0) {
+            // Show the most recent resume
+            showExistingResume(pdfs[0])
+        }
+    } catch (error) {
+        console.error('Failed to check existing resume:', error)
+        // Don't block the UI if checking fails
+        // Just show the upload area
+    }
+}
+
 // Auth state management
-authService.subscribe((state) => {
+authService.subscribe(async (state) => {
     if (state.loading) {
         authLoadingEl.classList.remove('hidden')
         uploadSectionEl.classList.add('hidden')
@@ -200,4 +307,9 @@ authService.subscribe((state) => {
     userNameEl.textContent = state.user.username || state.user.email || 'User'
     userInfoEl.classList.remove('hidden')
     logoutBtn.classList.remove('hidden')
+
+    // Check for existing resume (don't await to avoid blocking)
+    checkExistingResume(state.user.id).catch(err => {
+        console.error('Error checking existing resume:', err)
+    })
 })

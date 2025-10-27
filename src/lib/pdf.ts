@@ -147,6 +147,16 @@ class PDFService {
      * Delete a PDF and its storage file
      */
     async deletePDF(pdfId: string, filePath: string): Promise<void> {
+        // Delete from database first (this will cascade delete comments due to foreign key)
+        const { error: dbError } = await supabase
+            .from('pdfs')
+            .delete()
+            .eq('id', pdfId)
+
+        if (dbError) {
+            throw new Error(`Failed to delete PDF from database: ${dbError.message}`)
+        }
+
         // Delete from storage
         const { error: storageError } = await supabase.storage
             .from('resumes')
@@ -154,16 +164,8 @@ class PDFService {
 
         if (storageError) {
             console.error('Failed to delete file from storage:', storageError)
-        }
-
-        // Delete from database (this will cascade delete comments)
-        const { error: dbError } = await supabase
-            .from('pdfs')
-            .delete()
-            .eq('id', pdfId)
-
-        if (dbError) {
-            throw new Error(`Failed to delete PDF: ${dbError.message}`)
+            // Don't throw here since database deletion succeeded
+            // The orphaned file in storage is less critical
         }
     }
 }

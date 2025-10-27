@@ -31,6 +31,30 @@
                 <h2>Upload Your Resume</h2>
                 <p class="subtitle">Upload a PDF to get feedback from your peers</p>
 
+                <!-- Existing Resume Section -->
+                <div id="existing-resume" class="existing-resume hidden">
+                    <div class="existing-resume-header">
+                        <div class="existing-file-info">
+                            <span class="file-icon">📄</span>
+                            <div>
+                                <p class="file-name" id="existing-filename"></p>
+                                <p class="file-status">Active Resume</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="share-link">
+                        <input type="text" id="existing-share-link" readonly>
+                        <button id="existing-copy-btn" class="btn-secondary">Copy</button>
+                    </div>
+
+                    <div class="existing-actions">
+                        <button id="view-resume-btn" class="btn-primary">👁️ View Resume</button>
+                        <button id="replace-resume-btn" class="btn-secondary">🔄 Replace</button>
+                        <button id="delete-resume-btn" class="btn-danger">🗑️ Delete</button>
+                    </div>
+                </div>
+
                 <div class="upload-area" id="upload-area">
                     <input type="file" id="file-input" accept=".pdf" hidden>
                     <div class="upload-prompt">
@@ -66,7 +90,7 @@
                         <input type="text" id="share-link" readonly>
                         <button id="copy-btn" class="btn-secondary">Copy</button>
                     </div>
-                    <button id="upload-another" class="btn-primary">Upload Another</button>
+                    <button id="upload-another" class="btn-primary">Done</button>
                 </div>
             </div>
 
