@@ -19,9 +19,9 @@ const commentCountEl = document.getElementById('comment-count') as HTMLSpanEleme
 const prevPageBtn = document.getElementById('prev-page') as HTMLButtonElement
 const nextPageBtn = document.getElementById('next-page') as HTMLButtonElement
 const pageInfoEl = document.getElementById('page-info') as HTMLSpanElement
-const zoomInBtn = document.getElementById('zoom-in') as HTMLButtonElement
-const zoomOutBtn = document.getElementById('zoom-out') as HTMLButtonElement
-const zoomLevelEl = document.getElementById('zoom-level') as HTMLSpanElement
+// const zoomInBtn = document.getElementById('zoom-in') as HTMLButtonElement
+// const zoomOutBtn = document.getElementById('zoom-out') as HTMLButtonElement
+// const zoomLevelEl = document.getElementById('zoom-level') as HTMLSpanElement
 const pdfCanvasEl = document.getElementById('pdf-canvas') as HTMLCanvasElement
 const pdfContainerEl = document.getElementById('pdf-container') as HTMLDivElement
 const pinLayerEl = document.getElementById('pin-layer') as HTMLDivElement
@@ -285,21 +285,21 @@ nextPageBtn.addEventListener('click', () => {
 })
 
 // Zoom controls
-zoomInBtn.addEventListener('click', () => {
-    if (currentZoom < 2.0) {
-        currentZoom += 0.25
-        zoomLevelEl.textContent = `${Math.round(currentZoom * 100)}%`
-        renderPage(currentPage)
-    }
-})
-
-zoomOutBtn.addEventListener('click', () => {
-    if (currentZoom > 0.5) {
-        currentZoom -= 0.25
-        zoomLevelEl.textContent = `${Math.round(currentZoom * 100)}%`
-        renderPage(currentPage)
-    }
-})
+// zoomInBtn.addEventListener('click', () => {
+//     if (currentZoom < 2.0) {
+//         currentZoom += 0.25
+//         zoomLevelEl.textContent = `${Math.round(currentZoom * 100)}%`
+//         renderPage(currentPage)
+//     }
+// })
+//
+// zoomOutBtn.addEventListener('click', () => {
+//     if (currentZoom > 0.5) {
+//         currentZoom -= 0.25
+//         zoomLevelEl.textContent = `${Math.round(currentZoom * 100)}%`
+//         renderPage(currentPage)
+//     }
+// })
 
 // Toggle pins visibility
 togglePinsBtn.addEventListener('click', () => {
