@@ -144,7 +144,8 @@ async function renderPage(pageNum: number) {
 
     const renderContext = {
         canvasContext: context,
-        viewport: renderViewport
+        viewport: renderViewport,
+        canvas: canvas
     }
 
     await page.render(renderContext).promise

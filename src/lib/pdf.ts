@@ -52,12 +52,13 @@ class PDFService {
                     upsert: false
                 })
 
-            if (progressInterval) {
-                clearInterval(progressInterval)
-                if (onProgress) {
-                    onProgress({ loaded: file.size, total: file.size, percentage: 100 })
-                }
-            }
+            // TODO: fix this
+            // if (progressInterval) {
+            //     clearInterval(progressInterval)
+            //     if (onProgress) {
+            //         onProgress({ loaded: file.size, total: file.size, percentage: 100 })
+            //     }
+            // }
 
             if (uploadError) {
                 throw new Error(`Upload failed: ${uploadError.message}`)

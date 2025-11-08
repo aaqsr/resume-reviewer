@@ -271,7 +271,7 @@ async function checkExistingResume(userId: string) {
         const pdfs = await pdfService.getUserPDFs(userId)
         if (pdfs.length > 0) {
             // Show the most recent resume
-            showExistingResume(pdfs[0])
+            showExistingResume(pdfs[0]!)
         }
     } catch (error) {
         console.error('Failed to check existing resume:', error)

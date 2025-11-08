@@ -1,3 +1,3 @@
 // Also export for upload.ts integration
-export { UploadProgress, ProgressCallback };
+// export type { UploadProgress, ProgressCallback };
 
