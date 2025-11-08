@@ -259,7 +259,7 @@ uploadAnotherBtn.addEventListener('click', () => {
 logoutBtn.addEventListener('click', async () => {
     try {
         await authService.signOut()
-        window.location.href = '/'
+        window.location.href = './'
     } catch (error) {
         showError(error instanceof Error ? error.message : 'Failed to sign out')
     }
@@ -292,7 +292,7 @@ authService.subscribe(async (state) => {
 
     if (!state.user) {
         // Not authenticated, redirect to login
-        window.location.href = '/'
+        window.location.href = './'
         return
     }
 

@@ -141,7 +141,8 @@ class PDFService {
      * Generate a shareable link for a PDF
      */
     getShareableLink(shareToken: string): string {
-        return `${window.location.origin}/review.html?token=${shareToken}`
+        const base = window.location.origin + import.meta.env.BASE_URL
+        return `${base}review.html?token=${shareToken}`
     }
 
     /**
